@@ -24,9 +24,6 @@ dependencies:
   # المشاركة والنسخ
   share_plus: ^9.0.0
 
-  # لأيقونة وشاشة بداية (اختياري - يمكن حذفها إن لم ترغب بتخصيصها)
-  flutter_native_splash: ^2.4.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -37,6 +34,9 @@ flutter:
 
   assets:
     - assets/db/app_database.db
+    # assets/icon/app_icon.png هي نسخة عالية الدقة من أيقونة التطبيق (512×512)
+    # للمرجعية فقط أو للاستخدام مع flutter_launcher_icons مستقبلاً - أيقونات
+    # الأندرويد الفعلية موجودة بالفعل في android/app/src/main/res/mipmap-*/
 
   # في حال أضفت خطوطًا عربية مخصصة (مثل خط "Cairo" أو "Tajawal") ضعها هنا:
   # fonts:
