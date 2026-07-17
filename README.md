@@ -19,6 +19,16 @@ yemen_laws_app/
 ├── assets/
 │   └── db/
 │       └── app_database.db        ← قاعدة البيانات الجاهزة (مبنية مسبقًا)
+├── android/                        ← مشروع أندرويد جاهز بالكامل (Gradle + Manifest + أيقونة)
+│   ├── app/
+│   │   ├── build.gradle
+│   │   └── src/main/
+│   │       ├── AndroidManifest.xml
+│   │       ├── kotlin/.../MainActivity.kt
+│   │       └── res/ (أيقونة التطبيق + شاشة البداية)
+│   ├── build.gradle
+│   ├── settings.gradle
+│   └── gradlew / gradlew.bat
 ├── lib/
 │   ├── main.dart                  ← نقطة الدخول + الشريط السفلي (3 تبويبات)
 │   ├── core/
@@ -124,6 +134,10 @@ const int dbAssetVersion = 2;  // كانت 1
 
 ## 4) خطوات التشغيل (خطوة بخطوة)
 
+**تحديث:** مجلد `android/` أصبح **مُضمَّنًا كاملاً** الآن في المشروع
+(Gradle scaffolding + AndroidManifest + أيقونة التطبيق + شاشة بداية بلون
+هوية التطبيق) — لم تعد بحاجة لتشغيل `flutter create` لإنشائه من الصفر.
+
 ### المتطلبات
 - Flutter SDK (قناة stable) مُثبّت ومُهيّأ (`flutter doctor` بلا أخطاء حرجة).
 - Android Studio أو VS Code مع إضافة Flutter.
@@ -131,39 +145,75 @@ const int dbAssetVersion = 2;  // كانت 1
 ### الخطوات
 
 ```bash
-# 1) أنشئ مشروع فلاتر فارغًا بنفس الاسم (هذا يولّد مجلدي android/ و ios/
-#    والتي لم تُرفق هنا لأنها تُنشأ تلقائيًا وتعتمد على نسخة أدوات جهازك)
-flutter create --org com.yemenlaws --project-name yemen_laws_encyclopedia yemen_laws_app_new
+# 1) ادخل مجلد المشروع
+cd yemen_laws_app
 
-# 2) انسخ الملفات المرفقة فوق المشروع الجديد (استبدل عند السؤال)
-#    - pubspec.yaml
-#    - lib/  (المجلد بالكامل)
-#    - assets/  (المجلد بالكامل، يحتوي قاعدة البيانات الجاهزة)
-cp -r yemen_laws_app/lib yemen_laws_app/assets yemen_laws_app/pubspec.yaml \
-      yemen_laws_app_new/
-
-cd yemen_laws_app_new
-
-# 3) نزّل الحزم
+# 2) نزّل الحزم
 flutter pub get
+
+# 3) (مرة واحدة فقط) أكمل ملف gradle-wrapper.jar الثنائي المفقود.
+#    هذا الملف الوحيد لم يُرفق لأنه ملف ثنائي (binary) لا يمكن كتابته
+#    كنص. اختر إحدى الطريقتين التاليتين:
+#
+#    الطريقة أ (الأسهل): افتح المشروع في Android Studio → عند طلبه
+#    "Gradle Sync" اضغط Sync، وسيقوم Android Studio تلقائيًا بإكمال
+#    ملف الـ wrapper المفقود.
+#
+#    الطريقة ب (سطر الأوامر): إن كان لديك Gradle مثبتًا على جهازك:
+cd android && gradle wrapper --gradle-version 8.6 && cd ..
+#    أو ببساطة شغّل الأمر التالي مرة واحدة وسيُكمل فلاتر الملفات
+#    القياسية الناقصة تلقائيًا دون المساس بأي من ملفاتك الحالية:
+flutter create --platforms=android .
 
 # 4) شغّل على المحاكي أو جهاز حقيقي
 flutter run
 
-# 5) لبناء ملف APK نهائي للتوزيع
+# 5) لبناء ملف APK نهائي للتوزيع (موقّع مؤقتًا بمفتاح debug، يعمل للتجربة
+#    والتوزيع المباشر خارج المتجر مباشرة بدون أي إعداد إضافي)
 flutter build apk --release
 # الناتج في: build/app/outputs/flutter-apk/app-release.apk
 ```
 
-> **ملاحظة مهمة عن اسم التطبيق والحزمة:** إذا غيّرت `--org` أو
-> `--project-name` تأكد أن قيمة `name:` في `pubspec.yaml` المرفق تطابق
-> اسم الحزمة الذي استخدمته، وإلا عدّلها يدويًا لتطابق.
+> **معرّف التطبيق (Application ID):** `com.yemenlaws.encyclopedia` — عدّله
+> في `android/app/build.gradle` (سطري `namespace` و`applicationId`) وفي
+> اسم حزمة `MainActivity.kt` قبل النشر إن رغبت بمعرّف مختلف.
 
-### تخصيص اسم التطبيق وأيقونته (اختياري)
-- **اسم التطبيق الظاهر على الشاشة:** عدّل `android/app/src/main/AndroidManifest.xml`
-  → `android:label="موسوعة القوانين اليمنية"`.
-- **الأيقونة:** أضف حزمة `flutter_launcher_icons` وضع صورة الشعار، ثم:
-  `flutter pub run flutter_launcher_icons`.
+### التوقيع للنشر الفعلي على متجر Google Play
+نسخة `release` الحالية موقّعة تلقائيًا بمفتاح Debug (يعمل فورًا للتجربة
+والتوزيع اليدوي APK، لكنه **غير صالح للرفع على المتجر**). لإنشاء مفتاح
+توقيع حقيقي واستخدامه:
+
+```bash
+keytool -genkey -v -keystore ~/yemen-laws-key.jks -keyalg RSA -keysize 2048 \
+        -validity 10000 -alias yemen_laws
+```
+
+ثم انسخ `android/key.properties.example` إلى `android/key.properties`
+واملأ القيم الحقيقية:
+```
+storePassword=<كلمة المرور>
+keyPassword=<كلمة المرور>
+keyAlias=yemen_laws
+storeFile=/المسار/الكامل/إلى/yemen-laws-key.jks
+```
+
+**لا حاجة لتعديل أي كود** — ملف `android/app/build.gradle` مُعدّ مسبقًا
+ليكتشف وجود `key.properties` تلقائيًا ويستخدم مفتاحك الحقيقي بدلاً من
+مفتاح Debug في أي بناء `release` لاحق. لا ترفع `key.properties` ولا ملف
+`.jks` إلى أي مستودع عام (كلاهما مُستثنيان مسبقًا في `.gitignore`) — واحتفظ
+بنسخة احتياطية آمنة منهما، لأن فقدان مفتاح التوقيع يمنعك من نشر أي تحديث
+مستقبلي لنفس التطبيق على المتجر.
+
+
+
+### تخصيص اسم التطبيق وأيقونته (تم إعداد الافتراضي مسبقًا)
+- **اسم التطبيق الظاهر على الشاشة:** مضبوط بالفعل على "موسوعة القوانين
+  اليمنية" في `android/app/src/main/AndroidManifest.xml` (`android:label`).
+- **الأيقونة:** تم توليد أيقونة افتراضية (ميزان عدل ذهبي على خلفية كحلية)
+  بكل الأحجام المطلوبة في `android/app/src/main/res/mipmap-*/`. لاستبدالها
+  بشعارك الخاص: ضع صورة مربعة عالية الدقة (1024×1024 مثلاً) في
+  `assets/icon/app_icon.png`، أضف حزمة `flutter_launcher_icons` في
+  `pubspec.yaml`، ثم شغّل: `flutter pub run flutter_launcher_icons`.
 - **خط عربي احترافي (Cairo/Tajawal):** حمّل الخط من Google Fonts، ضعه في
   `assets/fonts/`، أضف قسم `fonts:` في `pubspec.yaml` (متروك كمثال معلّق
   بداخله)، ثم فعّل `fontFamily: 'Tajawal'` في `lib/core/theme.dart`.

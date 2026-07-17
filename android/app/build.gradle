@@ -1,59 +1,96 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
 def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
+def localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
+    localPropertiesFile.withReader("UTF-8") { reader ->
         localProperties.load(reader)
     }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+def flutterVersionCode = localProperties.getProperty("flutter.versionCode")
 if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
+    flutterVersionCode = "1"
 }
 
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
+def flutterVersionName = localProperties.getProperty("flutter.versionName")
 if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
+    flutterVersionName = "1.0.0"
+}
+
+// إعدادات توقيع نسخة الإصدار (Release Signing)
+// إن أنشأت ملف android/key.properties (راجع key.properties.example وقسم
+// "التوقيع للنشر" في README) سيُستخدم مفتاحك الخاص تلقائيًا، وإلا يستمر
+// التطبيق بالتوقيع بمفتاح التصحيح المؤقت حتى يعمل "flutter build apk" فورًا.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+def hasReleaseKeystore = keystorePropertiesFile.exists()
+if (hasReleaseKeystore) {
+    keystorePropertiesFile.withReader("UTF-8") { reader ->
+        keystoreProperties.load(reader)
+    }
 }
 
 android {
-    namespace = "com.yemenlaws.yemen_laws_encyclopedia"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // معرّف الحزمة (يجب أن يطابق applicationId أدناه ومسار حزمة MainActivity.kt)
+    namespace "com.yemenlaws.encyclopedia"
+
+    compileSdk 34
+    ndkVersion flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
     }
 
     defaultConfig {
-        // معرّف التطبيق الفريد على متجر Google Play - غيّره قبل النشر إن أردت
-        applicationId = "com.yemenlaws.yemen_laws_encyclopedia"
-        minSdk = 21
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutterVersionCode.toInteger()
-        versionName = flutterVersionName
+        // معرّف التطبيق الفريد على متجر بلاي - غيّره قبل النشر إن رغبت
+        applicationId "com.yemenlaws.encyclopedia"
+        minSdk 21
+        targetSdk 34
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            release {
+                keyAlias keystoreProperties["keyAlias"]
+                keyPassword keystoreProperties["keyPassword"]
+                storeFile file(keystoreProperties["storeFile"])
+                storePassword keystoreProperties["storePassword"]
+            }
+        }
     }
 
     buildTypes {
         release {
-            // مؤقتًا نستخدم مفتاح debug للتوقيع حتى يعمل build apk --release مباشرة.
-            // قبل النشر على المتجر: أنشئ مفتاح توقيع خاص بك وعدّل هذا القسم (راجع تعليمات Flutter الرسمية).
-            signingConfig = signingConfigs.debug
+            // إن وُجد android/key.properties يُستخدم مفتاح التوقيع الحقيقي،
+            // وإلا نوقّع مؤقتًا بمفتاح التصحيح (debug) حتى يعمل الأمر
+            // "flutter build apk --release" مباشرة بدون أي إعداد إضافي.
+            signingConfig hasReleaseKeystore ? signingConfigs.release : signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
         }
     }
 }
 
 flutter {
-    source = "../.."
+    source "../.."
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
